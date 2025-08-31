@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pokédex Avançada</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background: #f7f7f7;
+        padding: 20px;
+        text-align: center;
+    }
+    h1 {
+        color: #ef5350;
+        margin-bottom: 20px;
+    }
+    #search-container {
+        margin-bottom: 20px;
+    }
+    #pokemon-name {
+        padding: 10px;
+        font-size: 16px;
+        width: 200px;
+    }
+    button {
+        padding: 10px 15px;
+        background: #ef5350;
+        border: none;
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+        border-radius: 5px;
+        margin-left: 5px;
+        transition: background 0.3s;
+    }
+    button:hover { background: #d32f2f; }
+    #pokemon-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        justify-content: center;
+    }
+    .pokemon-card {
+        background: white;
+        border-radius: 10px;
+        padding: 15px;
+        width: 200px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        text-align: center;
+        transition: transform 0.3s, opacity 0.3s;
+        opacity: 0;
+    }
+    .pokemon-card.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    .pokemon-card img {
+        width: 120px;
+        height: 120px;
+    }
+    .type {
+        display: inline-block;
+        padding: 5px 10px;
+        border-radius: 5px;
+        color: white;
+        margin: 2px;
+        font-weight: bold;
+        text-transform: capitalize;
+        font-size: 12px;
+    }
+    .type.fire { background: #f08030; }
+    .type.water { background: #6890f0; }
+    .type.grass { background: #78c850; }
+    .type.electric { background: #f8d030; color: black;}
+    .type.ice { background: #98d8d8; }
+    .type.fighting { background: #c03028; }
+    .type.poison { background: #a040a0; }
+    .type.ground { background: #e0c068; color: black;}
+    .type.flying { background: #a890f0; }
+    .type.psychic { background: #f85888; }
+    .type.bug { background: #a8b820; }
+    .type.rock { background: #b8a038; }
+    .type.ghost { background: #705898; }
+    .type.dragon { background: #7038f8; }
+    .type.dark { background: #705848; }
+    .type.steel { background: #b8b8d0; }
+    .type.fairy { background: #f0b6bc; color: black;}
+    .type.normal { background: #a8a878; }
+    #pagination {
+        margin-top: 20px;
+    }
+</style>
+</head>
+<body>
+<h1>Pokédex Avançada</h1>
+
+<div id="search-container">
+    <input type="text" id="pokemon-name" placeholder="Digite o nome ou ID">
+    <button onclick="buscarPokemon()">Buscar</button>
+</div>
+
+<div id="pokemon-list"></div>
+
+<div id="pagination">
+    <button onclick="prevPage()">Anterior</button>
+    <button onclick="nextPage()">Próxima</button>
+</div>
+
+<script>
+    const pokemonList = document.getElementById("pokemon-list");
+    const limit = 20;
+    let offset = 0;
+
+    async function fetchPokemon(idOrName) {
+        try {
+            const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${idOrName}`);
+            if (!res.ok) throw new Error("Pokémon não encontrado");
+            const data = await res.json();
+            return data;
+        } catch(e) {
+            alert("Pokémon não encontrado!");
+            return null;
+        }
+    }
+
+    function createPokemonCard(data) {
+        const card = document.createElement("div");
+        card.classList.add("pokemon-card");
+
+        const name = capitalizeFirstLetter(data.name);
+        const types = data.types.map(t => t.type.name);
+        const img = data.sprites.front_default;
+        const height = data.height / 10;
+        const weight = data.weight / 10;
+
+        card.innerHTML = `
+            <img src="${img}" alt="${name}">
+            <h3>${name}</h3>
+            <p><strong>ID:</strong> ${data.id}</p>
+            <p><strong>Altura:</strong> ${height} m</p>
+            <p><strong>Peso:</strong> ${weight} kg</p>
+            <p><strong>Tipos:</strong> ${types.map(t => `<span class="type ${t}">${t}</span>`).join('')}</p>
+        `;
+        pokemonList.appendChild(card);
+        setTimeout(() => card.classList.add("show"), 100);
+    }
+
+    async function loadPokemons() {
+        pokemonList.innerHTML = "";
+        for (let i = offset + 1; i <= offset + limit; i++) {
+            const data = await fetchPokemon(i);
+            if (data) createPokemonCard(data);
+        }
+    }
+
+    async function buscarPokemon() {
+        const nameOrId = document.getElementById("pokemon-name").value.toLowerCase().trim();
+        if (!nameOrId) return loadPokemons();
+        pokemonList.innerHTML = "";
+        const data = await fetchPokemon(nameOrId);
+        if (data) createPokemonCard(data);
+    }
+
+    function nextPage() {
+        offset += limit;
+        loadPokemons();
+    }
+
+    function prevPage() {
+        offset = Math.max(0, offset - limit);
+        loadPokemons();
+    }
+
+    function capitalizeFirstLetter(str) {
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
+    // Carregar primeiros Pokémon ao abrir a página
+    loadPokemons();
+</script>
+</body>
+</html>
